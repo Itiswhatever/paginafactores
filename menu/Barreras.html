@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+            font-family: 'Questrial', sans-serif;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        #severitiesTitle {
+            background-color: #3498db;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        table.severitiesTable {
+            border-collapse: separate;
+            width: 100%;
+            max-width: 100%;
+            margin-top: 20px;
+            background-color: #A86EFC; /* Fondo blanco para la tabla */
+            box-shadow: 0 4px 8px rgba(110, 18, 18, 0.1); /* Sombra suave */
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-family: 'Questrial', sans-serif;
+            font-size: 18px;
+            max-width: 100%;
+        }
+
+        th {
+            background-color: #8C59F8;
+            color: rgb(0, 0, 0);
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px;
+            font-family: 'Questrial', sans-serif;
+            background-color: #6159f8;
+            color: rgb(0, 0, 0);
+            border-radius: 40px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input {
+            width: calc(100% - 16px);
+            padding: 8px;
+            box-sizing: border-box;
+            margin-top: 5px;
+        }
+
+        #severitiesCounter {
+            margin-top: 20px;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+
+
+<form id="severitiesForm">
+    <label for="severitiesBarrera">Nombre de la barrera:</label>
+    <input type="text" id="severitiesBarrera" name="severitiesBarrera" required>
+
+    <label for="severitiesDescripcion">Descripción:</label>
+    <input type="text" id="severitiesDescripcion" name="severitiesDescripcion" required>
+
+    <label for="severitiesPeso">Peso:</label>
+    <input type="text" id="severitiesPeso" name="severitiesPeso" required>
+
+    <button type="button" class="severitiesButton" onclick="submitSeveritiesForm()">Agregar a la tabla</button>
+</form>
+
+<table class="severitiesTable" id="severitiesTable">
+    <thead class="text-center">
+        <tr>
+            <th style="width: 30%;">Nombre de la barrera</th>
+            <th style="width: 50%;">Descripción</th>
+            <th style="width: 10%;">Peso</th>
+            <th style="width: 10%;">Acciones</th>
+        </tr>
+    </thead>
+</table>
+
+<div id="severitiesCounter"></div>
+
+<script>
+    // Cargar datos almacenados localmente al cargar la página
+    window.onload = function () {
+        loadSeveritiesTableData();
+        loadSeveritiesCounter();
+        loadSeveritiesReferenceLetters(); // Nueva línea agregada
+        updateTotalWeight();  // Agregar esta línea para calcular la suma inicial
+    };
+
+    function loadSeveritiesReferenceLetters() {
+        const severitiesReferenceLetters = [];
+        const severitiesTableRows = document.querySelectorAll('#severitiesTable tr');
+
+        for (let i = 1; i < severitiesTableRows.length; i++) {
+            severitiesReferenceLetters.push(severitiesTableRows[i].cells[0].innerHTML);
+        }
+
+        localStorage.setItem('severitiesReferenceLetters', JSON.stringify(severitiesReferenceLetters));
+    }
+
+    function loadSeveritiesTableData() {
+        const storedSeveritiesData = JSON.parse(localStorage.getItem('severitiesTableData')) || [];
+        const severitiesTable = document.getElementById('severitiesTable');
+        let lastSeveritiesRowNumber = 0;
+
+        for (const data of storedSeveritiesData) {
+            const newSeveritiesRow = severitiesTable.insertRow(-1);
+            const cell1 = newSeveritiesRow.insertCell(0);
+            const cell2 = newSeveritiesRow.insertCell(1);
+            const cell3 = newSeveritiesRow.insertCell(2);
+            const cell4 = newSeveritiesRow.insertCell(3);
+
+            lastSeveritiesRowNumber = Math.max(lastSeveritiesRowNumber, parseInt(data.rowNumber));
+
+            cell1.innerHTML = data.referenceLetter;
+            cell2.innerHTML = data.severity;
+            cell3.innerHTML = data.description;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = 'Eliminar fila';
+            deleteButton.onclick = function () {
+                severitiesTable.deleteRow(newSeveritiesRow.rowIndex);
+                updateSeveritiesRowNumbers();
+                saveSeveritiesTableData();
+                decrementSeveritiesCounter();
+                updateTotalWeight();  // Actualizar la suma cuando se elimina una fila
+            };
+
+            cell4.appendChild(deleteButton);
+        }
+
+        // Establecer el número de fila global
+        severitiesRowNumber = lastSeveritiesRowNumber + 1;
+    }
+
+    function updateSeveritiesRowNumbers() {
+        const severitiesTableRows = document.querySelectorAll('#severitiesTable tr');
+        for (let i = 1; i < severitiesTableRows.length; i++) {
+            severitiesTableRows[i].cells[0].innerHTML = severitiesTableRows[i].cells[0].innerHTML; // Mantener las letras
+        }
+    }
+
+    function submitSeveritiesForm() {
+        const form = document.getElementById('severitiesForm');
+        const severitiesTable = document.getElementById('severitiesTable');
+        const newSeveritiesRow = severitiesTable.insertRow(-1);
+
+        const cell1 = newSeveritiesRow.insertCell(0);
+        const cell2 = newSeveritiesRow.insertCell(1);
+        const cell3 = newSeveritiesRow.insertCell(2);
+        const cell4 = newSeveritiesRow.insertCell(3);
+
+        cell1.innerHTML = form.severitiesBarrera.value;
+        cell2.innerHTML = form.severitiesDescripcion.value;
+        cell3.innerHTML = form.severitiesPeso.value;
+
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = 'Eliminar fila';
+        deleteButton.onclick = function () {
+            severitiesTable.deleteRow(newSeveritiesRow.rowIndex);
+            updateSeveritiesRowNumbers();
+            saveSeveritiesTableData();
+            decrementSeveritiesCounter();
+            updateTotalWeight();  // Actualizar la suma cuando se elimina una fila
+        };
+
+        cell4.appendChild(deleteButton);
+
+        // Restablecer el formulario
+        form.reset();
+
+        saveSeveritiesTableData();
+        severitiesRowNumber++;
+        updateSeveritiesCounter();
+        loadSeveritiesReferenceLetters(); // Nueva línea agregada
+        updateTotalWeight();  // Actualizar la suma cuando se agrega una fila
+    }
+
+    function saveSeveritiesTableData() {
+        const severitiesTable = document.getElementById('severitiesTable');
+        const severitiesTableData = [];
+
+        for (let i = 1; i < severitiesTable.rows.length; i++) {
+            const severitiesRow = severitiesTable.rows[i];
+            const severitiesRowData = {
+                rowNumber: i,
+                referenceLetter: severitiesRow.cells[0].innerHTML,
+                severity: severitiesRow.cells[1].innerHTML,
+                description: severitiesRow.cells[2].innerHTML
+            };
+            severitiesTableData.push(severitiesRowData);
+        }
+
+        localStorage.setItem('severitiesTableData', JSON.stringify(severitiesTableData));
+    }
+
+    function updateSeveritiesCounter() {
+        const severitiesCounter = document.getElementById('severitiesCounter');
+        const currentSeveritiesCounter = parseInt(severitiesCounter.innerText.split(": ")[1]);
+        severitiesCounter.innerText = `Número de filas: ${currentSeveritiesCounter + 1}`;
+        localStorage.setItem('severitiesCounter', currentSeveritiesCounter + 1);
+    }
+
+    function decrementSeveritiesCounter() {
+        const severitiesCounter = document.getElementById('severitiesCounter');
+        const currentSeveritiesCounter = parseInt(severitiesCounter.innerText.split(": ")[1]);
+        const newSeveritiesCounterValue = Math.max(0, currentSeveritiesCounter - 1); // Evitar números negativos
+        severitiesCounter.innerText = `Número de filas: ${newSeveritiesCounterValue}`;
+        localStorage.setItem('severitiesCounter', newSeveritiesCounterValue);
+    }
+
+    function loadSeveritiesCounter() {
+        const severitiesCounter = document.getElementById('severitiesCounter');
+        const storedSeveritiesCounter = parseInt(localStorage.getItem('severitiesCounter')) || 0;
+        severitiesCounter.innerText = `Número de filas: ${storedSeveritiesCounter}`;
+    }
+
+    // Nueva función para calcular la suma total de los pesos
+    function updateTotalWeight() {
+        const severitiesTable = document.getElementById('severitiesTable');
+        let totalWeight = 0;
+
+        for (let i = 1; i < severitiesTable.rows.length; i++) {
+            const weight = parseFloat(severitiesTable.rows[i].cells[2].innerHTML) || 0;
+            totalWeight += weight;
+        }
+
+        // Mostrar la suma total debajo de 'Número de filas'
+        document.getElementById('severitiesCounter').innerText = `Número de filas: ${severitiesTable.rows.length - 1} | Total de Peso: ${totalWeight}`;
+    }
+</script>
+
+</body>
+</html>

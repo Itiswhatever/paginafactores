@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+            font-family: 'Questrial', sans-serif;
+            font-size: 18px;
+            text-align: center;
+        }
+       
+
+        #title {
+            background-color: #3498db;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        
+
+        table {
+            border-collapse: separate;
+            width: 100%;
+            max-width: 100%;
+            margin-top: 20px;
+            background-color: #A86EFC; /* Fondo blanco para la tabla */
+            box-shadow: 0 4px 8px rgba(110, 18, 18, 0.1); /* Sombra suave */
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-family: 'Questrial', sans-serif;
+            font-size: 18px;
+            max-width: 100%;
+        }
+
+        th {
+            background-color: #8C59F8;
+            color: rgb(0, 0, 0);
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px;
+            font-family: 'Questrial', sans-serif;
+            background-color: #6159f8;
+            color: rgb(0, 0, 0);
+            border-radius: 40px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input {
+            width: calc(100% - 16px);
+            padding: 8px;
+            box-sizing: border-box;
+            margin-top: 5px;
+        }
+
+        #counter {
+            margin-top: 20px;
+            color: transparent;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <form id="riskForm">
+        <label for="keyRiskArea1">Key Risk Area 1:</label>
+        <input type="text" id="keyRiskArea1" name="keyRiskArea1" required>
+
+        <label for="keyRiskArea2">Key Risk Area 2:</label>
+        <div id="keyRiskArea2Container">
+            <button type="button" onclick="addInput()">Agregar valor</button>
+            <button type="button" onclick="removeInput()">Eliminar casilla</button>
+            <div class="keyRiskArea2Inputs">
+                <input type="text" name="keyRiskArea2[]" required>
+            </div>
+        </div>
+
+        <button type="button" onclick="submitForm()">Agregar a la tabla</button>
+    </form>
+
+    <table id="dataTable">
+        <thead class="text-center">
+            <tr>
+                <th style="width: 30%;">Key Risk Area 1</th>
+                <th style="width: 30%;">Key Risk Area 2</th>
+                <th style="width: 10%;">Acciones</th>
+            </tr>
+        </thead>
+    </table>
+
+    <div id="counter"></div>
+
+    <script>
+        // Cargar datos almacenados localmente al cargar la página
+        window.onload = function () {
+            loadTableData();
+            loadCounter();
+        };
+
+        function addInput() {
+            const container = document.getElementById('keyRiskArea2Container');
+            const inputContainer = document.createElement('div');
+            inputContainer.className = 'keyRiskArea2Inputs';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = 'keyRiskArea2[]';
+            input.required = true;
+            inputContainer.appendChild(input);
+            container.insertBefore(inputContainer, container.lastChild);
+        }
+
+        function removeInput() {
+            const container = document.getElementById('keyRiskArea2Container');
+            const inputContainers = document.querySelectorAll('.keyRiskArea2Inputs');
+            if (inputContainers.length > 1) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function loadTableData() {
+            const storedData = JSON.parse(localStorage.getItem('keyRiskAreaTableData')) || [];
+            const table = document.getElementById('dataTable');
+            let lastRowNumber = 0;
+
+            for (const data of storedData) {
+                const newRow = table.insertRow(-1);
+                const cell1 = newRow.insertCell(0);
+                const cell2 = newRow.insertCell(1);
+                const cell3 = newRow.insertCell(2);
+
+                lastRowNumber = Math.max(lastRowNumber, parseInt(data.rowNumber));
+
+                cell1.innerHTML = data.keyRiskArea1;
+                cell2.innerHTML = data.keyRiskArea2.map((value, index) => `${index + 1}. ${value}`).join('<br>');
+
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = 'Eliminar fila';
+                deleteButton.onclick = function () {
+                    table.deleteRow(newRow.rowIndex);
+                    updateRowNumbers();
+                    saveTableData();
+                    decrementCounter();
+                };
+
+                cell3.appendChild(deleteButton);
+            }
+
+            // Establecer el número de fila global
+            rowNumber = lastRowNumber + 1;
+        }
+
+        function updateRowNumbers() {
+            const tableRows = document.querySelectorAll('#dataTable tr');
+            for (let i = 1; i < tableRows.length; i++) {
+                tableRows[i].cells[0].innerHTML = i + '.';
+            }
+        }
+
+        function submitForm() {
+            const form = document.getElementById('riskForm');
+            const table = document.getElementById('dataTable');
+            const newRow = table.insertRow(-1);
+
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+            const cell3 = newRow.insertCell(2);
+
+            cell1.innerHTML = form.keyRiskArea1.value;
+            cell2.innerHTML = getValues('keyRiskArea2[]').map((value, index) => `${index + 1}. ${value}`).join('<br>');
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = 'Eliminar fila';
+            deleteButton.onclick = function () {
+                table.deleteRow(newRow.rowIndex);
+                updateRowNumbers();
+                saveTableData();
+                decrementCounter();
+            };
+
+            cell3.appendChild(deleteButton);
+
+            // Restablecer el formulario
+            form.reset();
+            // Mantener solo una casilla en blanco en Key Risk Area 2
+            const container = document.getElementById('keyRiskArea2Container');
+            container.innerHTML = '<button type="button" onclick="addInput()">Agregar valor</button>' +
+                '<button type="button" onclick="removeInput()">Eliminar casilla</button>' +
+                '<div class="keyRiskArea2Inputs">' +
+                '<input type="text" name="keyRiskArea2[]" required>' +
+                '</div>';
+
+            saveTableData();
+            rowNumber++;
+            updateCounter();
+        }
+
+        function saveTableData() {
+            const table = document.getElementById('dataTable');
+            const tableData = [];
+
+            for (let i = 1; i < table.rows.length; i++) {
+                const row = table.rows[i];
+                const rowData = {
+                    rowNumber: i,
+                    keyRiskArea1: row.cells[0].innerHTML,
+                    keyRiskArea2: row.cells[1].innerHTML.split('<br>').map(value => value.split('. ')[1])
+                };
+                tableData.push(rowData);
+            }
+
+            localStorage.setItem('keyRiskAreaTableData', JSON.stringify(tableData));
+        }
+
+        function getValues(name) {
+            const values = [];
+            const inputs = document.getElementsByName(name);
+            for (const input of inputs) {
+                values.push(input.value);
+            }
+            return values;
+        }
+
+        function updateCounter() {
+            const counter = document.getElementById('counter');
+            const currentCounter = parseInt(counter.innerText.split(": ")[1]);
+            counter.innerText = `Número de filas: ${currentCounter + 1}`;
+        }
+
+        function decrementCounter() {
+            const counter = document.getElementById('counter');
+            const currentCounter = parseInt(counter.innerText.split(": ")[1]);
+            const newCounterValue = Math.max(0, currentCounter - 1); // Evitar números negativos
+            counter.innerText = `Número de filas: ${newCounterValue}`;
+        }
+
+        function loadCounter() {
+            const counter = document.getElementById('counter');
+            const storedCounter = parseInt(localStorage.getItem('keyRiskAreaCounter')) || 0;
+            counter.innerText = `Número de filas: ${storedCounter}`;
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+            font-family: 'Questrial', sans-serif;
+            font-size: 18px;
+            text-align: center;
+        }
+
+      
+        
+
+        table {
+            border-collapse: separate;
+            width: 100%;
+            max-width: 100%;
+            margin-top: 20px;
+            background-color: #A86EFC; /* Fondo blanco para la tabla */
+            box-shadow: 0 4px 8px rgba(110, 18, 18, 0.1); /* Sombra suave */
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-family: 'Questrial', sans-serif;
+            font-size: 18px;
+            max-width: 100%;
+
+        }
+
+        th {
+            background-color: #8C59F8;
+            color: rgb(0, 0, 0);
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px;
+            font-family: 'Questrial', sans-serif;
+            background-color: #6159f8;
+            color: rgb(0, 0, 0);
+            border-radius: 40px;
+
+
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input {
+            width: calc(100% - 16px);
+            padding: 8px;
+            box-sizing: border-box;
+            margin-top: 5px;
+        }
+
+        #counter {
+            margin-top: 20px;
+            color: transparent;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <form id="riskForm">
+        <label for="referenceLetter">Letra de referencia:</label>
+        <input type="text" id="referenceLetter" name="referenceLetter" required>
+
+        <label for="severity">Severidad:</label>
+        <input type="text" id="severity" name="severity" required>
+
+        <label for="description">Descripción:</label>
+        <input type="text" id="description" name="description" required>
+
+        <button type="button" onclick="submitForm()">Agregar a la tabla</button>
+    </form>
+
+    <table id="dataTable">
+        <thead class="text-center">
+            <tr>
+                <th style="width: 5%;">Letra</th>
+                <th style="width: 30%;">Severidad</th>
+                <th style="width: 30%;">Descripción</th>
+                <th style="width: 10%;">Acciones</th>
+            </tr>
+        </thead>
+    </table>
+
+    <div id="counter"></div>
+
+    <script>
+        // Cargar datos almacenados localmente al cargar la página
+        window.onload = function () {
+            loadTableData();
+            loadCounter();
+            loadReferenceLetters(); // Nueva línea agregada
+        };
+
+        function loadReferenceLetters() {
+            const referenceLetters = [];
+            const tableRows = document.querySelectorAll('#dataTable tr');
+
+            for (let i = 1; i < tableRows.length; i++) {
+                referenceLetters.push(tableRows[i].cells[0].innerHTML);
+            }
+
+            localStorage.setItem('referenceLetters', JSON.stringify(referenceLetters));
+        }
+
+        function loadTableData() {
+            const storedData = JSON.parse(localStorage.getItem('tableData')) || [];
+            const table = document.getElementById('dataTable');
+            let lastRowNumber = 0;
+
+            for (const data of storedData) {
+                const newRow = table.insertRow(-1);
+                const cell1 = newRow.insertCell(0);
+                const cell2 = newRow.insertCell(1);
+                const cell3 = newRow.insertCell(2);
+                const cell4 = newRow.insertCell(3);
+
+                lastRowNumber = Math.max(lastRowNumber, parseInt(data.rowNumber));
+
+                cell1.innerHTML = data.referenceLetter;
+                cell2.innerHTML = data.severity;
+                cell3.innerHTML = data.description;
+
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = 'Eliminar fila';
+                deleteButton.onclick = function () {
+                    table.deleteRow(newRow.rowIndex);
+                    updateRowNumbers();
+                    saveTableData();
+                    decrementCounter();
+                };
+
+                cell4.appendChild(deleteButton);
+            }
+
+            // Establecer el número de fila global
+            rowNumber = lastRowNumber + 1;
+        }
+
+        function updateRowNumbers() {
+            const tableRows = document.querySelectorAll('#dataTable tr');
+            for (let i = 1; i < tableRows.length; i++) {
+                tableRows[i].cells[0].innerHTML = tableRows[i].cells[0].innerHTML; // Mantener las letras
+            }
+        }
+
+        function submitForm() {
+            const form = document.getElementById('riskForm');
+            const table = document.getElementById('dataTable');
+            const newRow = table.insertRow(-1);
+
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+            const cell3 = newRow.insertCell(2);
+            const cell4 = newRow.insertCell(3);
+
+            cell1.innerHTML = form.referenceLetter.value;
+            cell2.innerHTML = form.severity.value;
+            cell3.innerHTML = form.description.value;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = 'Eliminar fila';
+            deleteButton.onclick = function () {
+                table.deleteRow(newRow.rowIndex);
+                updateRowNumbers();
+                saveTableData();
+                decrementCounter();
+            };
+
+            cell4.appendChild(deleteButton);
+
+            // Restablecer el formulario
+            form.reset();
+
+            saveTableData();
+            rowNumber++;
+            updateCounter();
+            loadReferenceLetters(); // Nueva línea agregada
+        }
+
+        function saveTableData() {
+            const table = document.getElementById('dataTable');
+            const tableData = [];
+
+            for (let i = 1; i < table.rows.length; i++) {
+                const row = table.rows[i];
+                const rowData = {
+                    rowNumber: i,
+                    referenceLetter: row.cells[0].innerHTML,
+                    severity: row.cells[1].innerHTML,
+                    description: row.cells[2].innerHTML
+                };
+                tableData.push(rowData);
+            }
+
+            localStorage.setItem('tableData', JSON.stringify(tableData));
+        }
+
+        function updateCounter() {
+            const counter = document.getElementById('counter');
+            const currentCounter = parseInt(counter.innerText.split(": ")[1]);
+            counter.innerText = `Número de filas: ${currentCounter + 1}`;
+            localStorage.setItem('counter', currentCounter + 1);
+        }
+
+        function decrementCounter() {
+            const counter = document.getElementById('counter');
+            const currentCounter = parseInt(counter.innerText.split(": ")[1]);
+            const newCounterValue = Math.max(0, currentCounter - 1); // Evitar números negativos
+            counter.innerText = `Número de filas: ${newCounterValue}`;
+            localStorage.setItem('counter', newCounterValue);
+        }
+
+        function loadCounter() {
+            const counter = document.getElementById('counter');
+            const storedCounter = parseInt(localStorage.getItem('counter')) || 0;
+            counter.innerText = `Número de filas: ${storedCounter}`;
+        }
+    </script>
+
+</body>
+
+</html>

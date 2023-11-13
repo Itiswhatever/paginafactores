@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #fff;
+            color: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        #matrixContainer {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        h2 {
+            background-color: #000080;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        .tables-container {
+            margin: 10px;  /* Ajusta el margen según sea necesario */
+        }
+
+        table {
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 255, 0.3);
+        }
+
+        th, td {
+            border: 3px solid #000;
+            padding: 30px;
+            text-align: center;
+            width: 30px; /* Ajusta el ancho de las celdas según tus necesidades */
+        }
+
+        #counter {
+            margin-top: 20px;
+            color: transparent;
+        }
+
+        #severitiesCounter {
+            color: transparent;
+            margin-top: 5px;
+        }
+
+        #totalWeightCounter {  /* Nuevo estilo para el contador de peso total */
+            margin-top: 5px;
+            color: transparent;
+        }
+
+        label, button {
+            margin-top: 10px;
+            color: #000;
+        }
+
+        input {
+            width: 50px;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        /* Estilo adicional para hacer el botón más grande */
+        button {
+            font-size: 16px;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="counter"></div>
+
+<div id="matrixContainer">
+    <h2>Matriz ERCS</h2>
+
+    <!-- Agrega esta línea para mostrar el contador de Severidades -->
+    <div id="severitiesCounter"></div>
+
+    <!-- Nuevo div para mostrar el contador de peso total -->
+    <div id="totalWeightCounter"></div>
+
+    <!-- Modifica el botón para crear la matriz -->
+    <button onclick="createMatrix()">Crear Matriz</button>
+
+    <!-- Agrega el contenedor para la tabla y el formulario -->
+    <div class="tables-container">
+        <table id="riskMatrix"></table>
+
+        <!-- Formulario para agregar texto a la matriz -->
+        <form id="textForm">
+            <label for="cellText">Texto:</label>
+            <input type="text" id="cellText" name="cellText" required>
+            <button type="button" onclick="addTextToMatrix()">Agregar a la matriz</button>
+        </form>
+
+        <!-- Tabla adicional debajo de la matriz -->
+        <table id="additionalTable"></table>
+    </div>
+</div>
+
+<script>
+    var colors = ['yellow', 'red', 'green'];
+    var currentIndex = 0;
+
+    window.onload = function () {
+        loadCounter();
+        loadSeveritiesCounter();
+        loadTotalWeightCounter();
+        updateTotalWeight();  // Agrega esta línea para calcular la suma inicial
+    };
+
+    function createMatrix() {
+        var rows = parseInt(localStorage.getItem('counter')) || 0;
+        var columns = parseInt(localStorage.getItem('severitiesCounter')) || 0;
+        var matrixTable = document.getElementById("riskMatrix");
+        var additionalTable = document.getElementById("additionalTable");
+
+        matrixTable.innerHTML = "";
+        additionalTable.innerHTML = "";
+
+        var referenceLetters = JSON.parse(localStorage.getItem('referenceLetters')) || [];
+
+        for (var i = 1; i <= rows + 1; i++) {
+            var row = matrixTable.insertRow(-1);
+
+            if (i === rows + 1) {
+                var cell = row.insertCell(-1);
+                cell.colSpan = columns;
+                cell.innerHTML = 'No implication safety';
+            } else {
+                for (var j = columns - 1; j >= 0; j--) {
+                    var cell = row.insertCell(-1);
+                    var columnIndex = (i - 1) % referenceLetters.length;
+                    var letterWithNumber = referenceLetters[columnIndex] + j;
+                    cell.innerHTML = letterWithNumber || '';
+                    cell.id = "cell_" + i + "_" + j;
+                    cell.onclick = function () {
+                        changeColor(this.id);
+                    };
+                }
+            }
+        }
+
+        // Agregar la fila a la tabla adicional debajo de la matriz
+        var additionalRow = additionalTable.insertRow(-1);
+        for (var j = columns - 1; j >= 0; j--) {
+            var cell = additionalRow.insertCell(-1);
+            cell.innerHTML = '';
+        }
+
+        updateTotalWeight();  // Agrega esta línea para actualizar la suma total
+    }
+
+    function changeColor(cellId) {
+        var cell = document.getElementById(cellId);
+        cell.style.backgroundColor = colors[currentIndex];
+        currentIndex = (currentIndex + 1) % colors.length;
+    }
+
+    function loadCounter() {
+        const counter = document.getElementById('counter');
+        const storedCounter = localStorage.getItem('counter') || 0;
+        counter.innerText = `Número de filas: ${storedCounter}`;
+    }
+
+    function loadSeveritiesCounter() {
+        const severitiesCounter = document.getElementById('severitiesCounter');
+        const storedSeveritiesCounter = localStorage.getItem('severitiesCounter') || 0;
+        severitiesCounter.innerText = `Número de columnas (Severidades): ${storedSeveritiesCounter}`;
+    }
+
+    function loadTotalWeightCounter() {
+        const totalWeightCounter = document.getElementById('totalWeightCounter');
+        const storedTotalWeight = localStorage.getItem('totalWeight') || 0;
+        totalWeightCounter.innerText = `Total de Peso: ${storedTotalWeight}`;
+    }
+
+    function addTextToMatrix() {
+        var cellText = document.getElementById('cellText').value.trim();
+        if (cellText === '') {
+            alert('Por favor, ingrese un valor de texto.');
+            return;
+        }
+
+        var additionalTable = document.getElementById("additionalTable");
+
+        // Agregar el valor a la tabla adicional debajo de la matriz
+        var additionalRow = additionalTable.rows[0];
+        for (var j = 0; j < additionalRow.cells.length; j++) {
+            var cell = additionalRow.cells[j];
+            if (cell.innerHTML === '') {
+                cell.innerHTML = cellText;
+                break;
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
+
